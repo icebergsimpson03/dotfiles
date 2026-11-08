@@ -1,0 +1,19 @@
+# ~/.ssh/config, managed by chezmoi. Keys come from the 1Password agent (SSH_AUTH_SOCK),
+# so there are no IdentityFile lines.
+
+Include ~/.ssh/config.d/*
+
+# Homelab examples. Fill in your own hosts.
+# Host pve1
+#     HostName 192.168.1.10
+#     User root
+#
+# Host *.lab
+#     User root
+
+Host *
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    # If 1Password holds more than ~5 keys, servers can reject you with
+    # "Too many authentication failures". Fix by naming the key per host with
+    # IdentityFile ~/.ssh/<key>.pub plus IdentitiesOnly yes.

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Installs mise (Linux; on macOS it comes from Homebrew) and the tools in ~/.config/mise/config.toml.
+# Re-runs when the tool list changes: {{ include "dot_config/mise/config.toml" | sha256sum }}
+set -euo pipefail
+
+export PATH="$HOME/.local/bin:$PATH"
+if ! command -v mise >/dev/null; then
+  curl -fsSL https://mise.run | sh
+fi
+mise install --yes

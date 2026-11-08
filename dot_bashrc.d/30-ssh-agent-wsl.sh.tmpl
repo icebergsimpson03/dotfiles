@@ -1,0 +1,21 @@
+# WSL-only: bridges 1Password's Windows SSH agent into Linux as a Unix socket,
+# so Linux ssh, git, scp, rsync and ansible all use the keys in 1Password.
+# Needs: socat (apt) and npiperelay on Windows: `winget install albertony.npiperelay`.
+
+export SSH_AUTH_SOCK="$HOME/.ssh/agent.sock"
+
+if ! ss -lx 2>/dev/null | grep -qF "$SSH_AUTH_SOCK"; then
+  _npr=""
+  for c in /mnt/c/Users/{{ .windowsUser }}/AppData/Local/Microsoft/WinGet/Packages/albertony.npiperelay_*/npiperelay.exe \
+           /mnt/c/Users/{{ .windowsUser }}/AppData/Local/Microsoft/WinGet/Packages/jstarks.npiperelay_*/npiperelay.exe; do
+    [ -f "$c" ] && { _npr="$c"; break; }
+  done
+  if [ -n "$_npr" ]; then
+    rm -f "$SSH_AUTH_SOCK"
+    ( setsid socat UNIX-LISTEN:"$SSH_AUTH_SOCK",fork \
+        EXEC:"$_npr -ei -s //./pipe/openssh-ssh-agent",nofork >/dev/null 2>&1 & )
+  else
+    echo "ssh-agent bridge: npiperelay.exe not found. Run 'winget install albertony.npiperelay' on Windows." >&2
+  fi
+  unset _npr c
+fi

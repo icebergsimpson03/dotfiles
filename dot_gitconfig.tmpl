@@ -1,0 +1,30 @@
+[user]
+	name = {{ .name }}
+	email = {{ .email }}
+
+[init]
+	defaultBranch = main
+
+[pull]
+	ff = only
+
+[push]
+	autoSetupRemote = true
+
+[fetch]
+	prune = true
+
+[diff]
+	algorithm = histogram
+
+[rerere]
+	enabled = true
+{{ if .isWSL }}
+# HTTPS auth goes through Git Credential Manager from Git for Windows,
+# so tokens live in Windows Credential Manager. SSH remotes use 1Password via the agent bridge.
+[credential]
+	helper = /mnt/c/Program\\ Files/Git/mingw64/bin/git-credential-manager.exe
+{{ end }}
+# Untracked, machine-specific overrides (e.g. a work email for some repos).
+[include]
+	path = ~/.gitconfig.local

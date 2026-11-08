@@ -1,0 +1,16 @@
+{{- /* Generated into ~/.config/chezmoi/chezmoi.toml on `chezmoi init`. */ -}}
+{{- $name := promptStringOnce . "name" "Git name" -}}
+{{- $email := promptStringOnce . "email" "Git email" -}}
+
+{{- $isWSL := false -}}
+{{- $windowsUser := "" -}}
+{{- if and (eq .chezmoi.os "linux") (.chezmoi.kernel.osrelease | lower | contains "microsoft") -}}
+{{-   $isWSL = true -}}
+{{-   $windowsUser = output "/mnt/c/Windows/System32/cmd.exe" "/c" "echo %USERNAME%" | trim -}}
+{{- end -}}
+
+[data]
+    name = {{ $name | quote }}
+    email = {{ $email | quote }}
+    isWSL = {{ $isWSL }}
+    windowsUser = {{ $windowsUser | quote }}

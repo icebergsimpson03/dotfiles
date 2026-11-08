@@ -1,0 +1,2 @@
+# Always LF: these files are used on Linux and macOS, even when committed from Windows.
+* text=auto eol=lf

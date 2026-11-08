@@ -1,0 +1,36 @@
+{{ if eq .chezmoi.os "linux" -}}
+#!/usr/bin/env bash
+# Installs Docker Engine from Docker's apt repo (not Debian's docker.io).
+# https://docs.docker.com/engine/install/debian/
+set -euo pipefail
+
+if dpkg -s docker-ce >/dev/null 2>&1; then
+  echo "Docker Engine already installed."
+  exit 0
+fi
+
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+sudo tee /etc/apt/sources.list.d/docker.sources >/dev/null <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/debian
+Suites: $(. /etc/os-release && echo "$VERSION_CODENAME")
+Components: stable
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+
+sudo apt-get update
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+  docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+sudo usermod -aG docker "$USER"
+
+if [ -d /run/systemd/system ]; then
+  sudo systemctl enable --now docker
+else
+  echo ">>> systemd isn't running yet. Docker starts on its own after 'wsl --shutdown'."
+fi
+echo ">>> Docker installed. Open a new shell (or 'wsl --shutdown') to pick up the docker group."
+{{ end -}}

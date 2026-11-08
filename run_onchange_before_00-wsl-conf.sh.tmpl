@@ -1,0 +1,25 @@
+{{ if .isWSL -}}
+#!/usr/bin/env bash
+# Writes /etc/wsl.conf. Re-runs whenever this file changes.
+set -euo pipefail
+
+sudo tee /etc/wsl.conf >/dev/null <<'EOF'
+[boot]
+systemd=true
+
+[user]
+default={{ .chezmoi.username }}
+
+[interop]
+# Don't put every Windows PATH entry into Linux PATH: slow command lookup and
+# Windows binaries shadowing Linux ones (e.g. Docker Desktop's docker).
+# The few Windows tools we want are added in ~/.bashrc.d/20-wsl.sh.
+appendWindowsPath=false
+
+[automount]
+# Allow chmod/chown on /mnt/c files.
+options="metadata,umask=22,fmask=11"
+EOF
+
+echo ">>> /etc/wsl.conf updated. Run 'wsl --shutdown' from Windows, then reopen Debian."
+{{ end -}}

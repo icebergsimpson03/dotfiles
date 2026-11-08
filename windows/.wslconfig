@@ -1,0 +1,20 @@
+# Windows-side WSL settings. Lives at %UserProfile%\.wslconfig.
+# chezmoi copies this file there when run inside WSL (see run_onchange_before_01-wslconfig.sh.tmpl).
+# Changes take effect after `wsl --shutdown`.
+
+[wsl2]
+# Mirrored mode: WSL shares Windows' network interfaces, so localhost works both ways
+# and LAN hosts (the homelab) see this PC's real IP. Switch to "nat" if Docker
+# port publishing ever misbehaves.
+networkingMode=mirrored
+
+# Defaults are 50% of RAM and all cores. Uncomment to cap.
+# memory=12GB
+# processors=8
+
+[experimental]
+# Return idle memory to Windows over time instead of holding the page cache.
+autoMemoryReclaim=gradual
+# Let the distro's VHD shrink when files are deleted. Only applies to VHDs created
+# after this is set.
+sparseVhd=true

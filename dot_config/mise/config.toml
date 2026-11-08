@@ -1,0 +1,15 @@
+# Same CLI tools and versions on Debian and macOS, newer than apt carries.
+# Change a version or add a tool, then `chezmoi apply` (or `mise install`).
+[tools]
+bat = "latest"
+fd = "latest"
+fzf = "latest"
+ripgrep = "latest"
+
+# Language runtimes, when you need them:
+# node = "lts"
+# python = "3.13"
+# go = "latest"
+
+[settings]
+experimental = false

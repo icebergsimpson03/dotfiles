@@ -1,0 +1,25 @@
+{{ if eq .chezmoi.os "linux" -}}
+#!/usr/bin/env bash
+# Installs Debian packages from .chezmoidata/packages.yaml. Re-runs when the list changes.
+set -euo pipefail
+sudo apt-get update
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+  {{ .packages.debian | join " " }}
+
+{{ else if eq .chezmoi.os "darwin" -}}
+#!/usr/bin/env bash
+# Installs Homebrew packages from .chezmoidata/packages.yaml. Re-runs when the list changes.
+set -euo pipefail
+if ! command -v brew >/dev/null; then
+  echo "Homebrew is not installed. Install it from https://brew.sh and re-run 'chezmoi apply'." >&2
+  exit 1
+fi
+brew bundle --file=- <<EOF
+{{ range .packages.darwin.brews -}}
+brew {{ . | quote }}
+{{ end -}}
+{{ range .packages.darwin.casks -}}
+cask {{ . | quote }}
+{{ end -}}
+EOF
+{{ end -}}

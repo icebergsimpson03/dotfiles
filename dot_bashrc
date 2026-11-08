@@ -1,0 +1,59 @@
+# ~/.bashrc, managed by chezmoi. Edit with `chezmoi edit ~/.bashrc`.
+# Machine-specific, untracked settings go in ~/.bashrc.local.
+
+# Non-interactive shells stop here.
+case $- in *i*) ;; *) return ;; esac
+
+# --- PATH -------------------------------------------------------------------
+case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) PATH="$HOME/.local/bin:$PATH" ;; esac
+export PATH
+
+# --- History ----------------------------------------------------------------
+HISTCONTROL=ignoreboth:erasedups
+HISTSIZE=50000
+HISTFILESIZE=100000
+HISTTIMEFORMAT='%F %T  '
+shopt -s histappend
+PROMPT_COMMAND="history -a${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
+
+# --- Shell options ----------------------------------------------------------
+shopt -s checkwinsize globstar cdspell 2>/dev/null
+export EDITOR=vim VISUAL=vim
+export LESS='-R -F -X'
+
+# --- Completion -------------------------------------------------------------
+if [ -r /usr/share/bash-completion/bash_completion ]; then
+  . /usr/share/bash-completion/bash_completion
+elif [ -n "${HOMEBREW_PREFIX:-}" ] && [ -r "$HOMEBREW_PREFIX/etc/profile.d/bash_completion.sh" ]; then
+  . "$HOMEBREW_PREFIX/etc/profile.d/bash_completion.sh"
+fi
+
+# --- Prompt (shows git branch) ----------------------------------------------
+for f in /usr/lib/git-core/git-sh-prompt \
+         "${HOMEBREW_PREFIX:-/opt/homebrew}/etc/bash_completion.d/git-prompt.sh"; do
+  [ -r "$f" ] && . "$f" && break
+done
+if declare -F __git_ps1 >/dev/null; then
+  GIT_PS1_SHOWDIRTYSTATE=1
+  PS1='\[\e[32m\]\u@\h\[\e[0m\]:\[\e[34m\]\w\[\e[33m\]$(__git_ps1 " (%s)")\[\e[0m\]\$ '
+else
+  PS1='\[\e[32m\]\u@\h\[\e[0m\]:\[\e[34m\]\w\[\e[0m\]\$ '
+fi
+
+# --- Aliases ----------------------------------------------------------------
+if ls --color=auto / >/dev/null 2>&1; then alias ls='ls --color=auto'; else alias ls='ls -G'; fi
+alias ll='ls -lah'
+alias grep='grep --color=auto'
+alias ..='cd ..'
+
+# --- mise (CLI tools and runtimes) ------------------------------------------
+if command -v mise >/dev/null; then
+  eval "$(mise activate bash)"
+fi
+
+# --- Modular snippets and local overrides -----------------------------------
+for f in "$HOME"/.bashrc.d/*.sh; do
+  [ -r "$f" ] && . "$f"
+done
+unset f
+[ -r "$HOME/.bashrc.local" ] && . "$HOME/.bashrc.local"

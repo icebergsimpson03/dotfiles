@@ -1,0 +1,15 @@
+{{ if .isWSL -}}
+#!/usr/bin/env bash
+# Copies windows/.wslconfig to %UserProfile%\.wslconfig.
+# Re-runs when the source changes: {{ include "windows/.wslconfig" | sha256sum }}
+set -euo pipefail
+
+dest="/mnt/c/Users/{{ .windowsUser }}/.wslconfig"
+src="{{ .chezmoi.sourceDir }}/windows/.wslconfig"
+
+if ! cmp -s "$src" "$dest" 2>/dev/null; then
+  [ -f "$dest" ] && cp "$dest" "$dest.bak"
+  cp "$src" "$dest"
+  echo ">>> Updated $dest. Run 'wsl --shutdown' from Windows for it to take effect."
+fi
+{{ end -}}

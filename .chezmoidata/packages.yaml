@@ -1,0 +1,39 @@
+# System packages. Editing this list re-runs the install script on next `chezmoi apply`.
+# Fast-moving CLI tools and language runtimes go in dot_config/mise/config.toml instead.
+packages:
+  debian:
+    - bash-completion
+    - build-essential
+    - ca-certificates
+    - curl
+    - dnsutils
+    - git
+    - gnupg
+    - htop
+    - iproute2
+    - iputils-ping
+    - jq
+    - less
+    - man-db
+    - openssh-client
+    - procps
+    - rsync
+    - socat          # used by the 1Password agent bridge
+    - tmux
+    - unzip
+    - vim
+    - wget
+    - zip
+
+  darwin:
+    brews:
+      - bash         # macOS ships bash 3.2; this is current bash
+      - bash-completion@2
+      - coreutils
+      - git
+      - jq
+      - mise
+      - rsync
+      - tmux
+      - wget
+    casks: []
