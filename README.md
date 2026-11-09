@@ -39,13 +39,13 @@ Bash, git, ssh and tooling for **Debian on WSL2** (Windows) and **macOS**, manag
 2. `brew install chezmoi && chezmoi init --apply <github-user>`
 3. Make Homebrew bash your login shell:
    ```bash
-   echo /opt/homebrew/bin/bash | sudo tee -a /etc/shells
-   chsh -s /opt/homebrew/bin/bash
+   echo "$(brew --prefix)/bin/bash" | sudo tee -a /etc/shells
+   chsh -s "$(brew --prefix)/bin/bash"
    ```
 4. Point ssh at 1Password in `~/.ssh/config.d/1password` (untracked):
    ```
    Host *
-       IdentityAgent "~/Library/Group Containers/2BUAT4S2Q.com.1password/t/agent.sock"
+       IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
    ```
 
 ## Day to day
