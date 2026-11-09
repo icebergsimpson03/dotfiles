@@ -19,6 +19,14 @@
 
 [rerere]
 	enabled = true
+
+[alias]
+	st = status
+	co = checkout
+	br = branch
+	ci = commit
+	lg = log --oneline --graph --decorate
+
 {{ if .isWSL }}
 # HTTPS auth goes through Git Credential Manager from Git for Windows,
 # so tokens live in Windows Credential Manager. SSH remotes use 1Password via the agent bridge.
