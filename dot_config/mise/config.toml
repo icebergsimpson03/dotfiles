@@ -5,6 +5,7 @@ bat = "latest"
 fd = "latest"
 fzf = "latest"
 ripgrep = "latest"
+terraform = "1.17.1"
 
 # Language runtimes, when you need them:
 # node = "lts"
