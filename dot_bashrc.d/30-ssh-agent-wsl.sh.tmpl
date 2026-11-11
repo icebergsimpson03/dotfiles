@@ -4,18 +4,39 @@
 
 export SSH_AUTH_SOCK="$HOME/.ssh/agent.sock"
 
-if ! ss -lx 2>/dev/null | grep -qF "$SSH_AUTH_SOCK"; then
-  _npr=""
-  for c in /mnt/c/Users/{{ .windowsUser }}/AppData/Local/Microsoft/WinGet/Packages/albertony.npiperelay_*/npiperelay.exe \
-           /mnt/c/Users/{{ .windowsUser }}/AppData/Local/Microsoft/WinGet/Packages/jstarks.npiperelay_*/npiperelay.exe; do
-    [ -f "$c" ] && { _npr="$c"; break; }
-  done
-  if [ -n "$_npr" ]; then
+# Healthy = the socket file exists and an agent answers on it. `ssh-add -l` exits
+# 2 only when it can't reach an agent (1 just means "no keys listed", e.g. locked).
+# Don't trust `ss -lx` alone: a socat whose socket file was deleted still shows up there.
+_agent_bridge_ok() {
+  [ -S "$SSH_AUTH_SOCK" ] || return 1
+  ssh-add -l >/dev/null 2>&1
+  [ $? -ne 2 ]
+}
+
+if ! _agent_bridge_ok; then
+  # Serialize: several terminals starting at once must not delete each other's socket.
+  (
+    flock -w 5 9 || exit 0
+    _agent_bridge_ok && exit 0
+
+    _npr=""
+    for c in /mnt/c/Users/{{ .windowsUser }}/AppData/Local/Microsoft/WinGet/Packages/albertony.npiperelay_*/npiperelay.exe \
+             /mnt/c/Users/{{ .windowsUser }}/AppData/Local/Microsoft/WinGet/Packages/jstarks.npiperelay_*/npiperelay.exe; do
+      [ -f "$c" ] && { _npr="$c"; break; }
+    done
+    if [ -z "$_npr" ]; then
+      echo "ssh-agent bridge: npiperelay.exe not found. Run 'winget install albertony.npiperelay' on Windows." >&2
+      exit 0
+    fi
+
+    # Clear out any stale bridge (e.g. one listening on a deleted socket file).
+    pkill -f "socat UNIX-LISTEN:$SSH_AUTH_SOCK" 2>/dev/null
     rm -f "$SSH_AUTH_SOCK"
-    ( setsid socat UNIX-LISTEN:"$SSH_AUTH_SOCK",fork \
-        EXEC:"$_npr -ei -s //./pipe/openssh-ssh-agent",nofork >/dev/null 2>&1 & )
-  else
-    echo "ssh-agent bridge: npiperelay.exe not found. Run 'winget install albertony.npiperelay' on Windows." >&2
-  fi
-  unset _npr c
+    setsid socat UNIX-LISTEN:"$SSH_AUTH_SOCK",fork \
+      EXEC:"$_npr -ei -s //./pipe/openssh-ssh-agent",nofork >/dev/null 2>&1 9>&- &
+
+    # Wait briefly for the socket so the shell's first ssh/ansible call works.
+    for _ in 1 2 3 4 5 6 7 8 9 10; do [ -S "$SSH_AUTH_SOCK" ] && break; sleep 0.1; done
+  ) 9>"$HOME/.ssh/agent.sock.lock"
 fi
+unset -f _agent_bridge_ok

@@ -4,4 +4,5 @@ windows/
 {{ if not .isWSL }}
 .bashrc.d/20-wsl.sh
 .bashrc.d/30-ssh-agent-wsl.sh
+.local/bin/op
 {{ end }}

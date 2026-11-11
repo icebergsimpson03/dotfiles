@@ -6,6 +6,9 @@ fd = "latest"
 fzf = "latest"
 ripgrep = "latest"
 terraform = "1.17.1"
+uv = "latest"
+ansible = { version = "latest", python = "3.13", with = ["proxmoxer", "requests", "jmespath"] }
+"pypi:ansible-lint" = "latest"
 
 # Language runtimes, when you need them:
 # node = "lts"

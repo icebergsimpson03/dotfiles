@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# WSL-only `op` wrapper: uses the Windows 1Password CLI (op.exe) so the Windows
+# desktop app unlocks it with Windows Hello, like Touch ID on the Mac.
+#
+# Everything except `op run` is passed straight to op.exe. `op run` can't be: op.exe
+# would start the child as a Windows process, and terraform/ansible here are Linux
+# binaries. So `op run` is done in Linux: resolve each op:// reference with
+# `op.exe read`, export it, then exec the command. Unlike real `op run`, output is
+# not masked.
+set -euo pipefail
+
+opx=""
+for c in /mnt/c/Users/{{ .windowsUser }}/AppData/Local/Microsoft/WinGet/Packages/AgileBits.1Password.CLI_*/op.exe \
+         "/mnt/c/Program Files/1Password CLI/op.exe"; do
+  [ -f "$c" ] && { opx="$c"; break; }
+done
+if [ -z "$opx" ]; then
+  # No Windows CLI: fall back to the Linux one (needs `eval "$(op signin)"`).
+  exec /usr/bin/op "$@"
+fi
+
+if [ "${1:-}" != "run" ]; then
+  exec "$opx" "$@"
+fi
+
+# --- op run emulation -------------------------------------------------------
+shift
+env_files=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --) shift; break ;;
+    --env-file=*) env_files+=("${1#--env-file=}"); shift ;;
+    --env-file) env_files+=("$2"); shift 2 ;;
+    --no-masking) shift ;;
+    -*) echo "op wrapper: unsupported 'op run' option: $1" >&2; exit 2 ;;
+    *) break ;;  # first non-option starts the command; `--` is optional, as in real `op run`
+  esac
+done
+[ $# -gt 0 ] || { echo "op wrapper: usage: op run [--env-file=FILE] -- command [args]" >&2; exit 2; }
+
+resolve() {  # print the secret for an op:// reference, without op.exe's CR
+  local v
+  # </dev/null: op.exe reads stdin, and inside the env-file loop stdin is the env
+  # file, so without it the first lookup swallows every remaining line.
+  v="$("$opx" read --no-newline "$1" </dev/null)" || { echo "op wrapper: could not read $1" >&2; exit 1; }
+  printf '%s' "${v%$'\r'}"
+}
+
+# Variables from the env files (dotenv: KEY=VALUE, optional quotes, # comments).
+for f in "${env_files[@]}"; do
+  [ -f "$f" ] || { echo "op wrapper: env file not found: $f" >&2; exit 1; }
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"
+    [[ "$line" =~ ^[[:space:]]*(#|$) ]] && continue
+    [[ "$line" =~ ^[[:space:]]*(export[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]] || continue
+    key="${BASH_REMATCH[2]}"; val="${BASH_REMATCH[3]}"
+    if [[ "$val" =~ ^\"(.*)\"$ || "$val" =~ ^\'(.*)\'$ ]]; then val="${BASH_REMATCH[1]}"; fi
+    [[ "$val" == op://* ]] && val="$(resolve "$val")"
+    export "$key=$val"
+  done < "$f"
+done
+
+# Like real `op run`, also resolve op:// references already in the environment.
+while IFS='=' read -r key _; do
+  val="${!key-}"
+  [[ "$val" == op://* ]] && export "$key=$(resolve "$val")"
+done < <(env | grep -E '^[A-Za-z_][A-Za-z0-9_]*=op://' || true)
+
+exec "$@"
